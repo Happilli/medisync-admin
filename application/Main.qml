@@ -10,14 +10,43 @@ Window {
     title: "MediSync Admin"
     color: Theme.backgroundColor
 
-    Login {
+    Loader {
+        id: contentLoader
         anchors.fill: parent
+        sourceComponent: SessionManager.isLoggedIn() ? dashboardComponent : loginComponent
     }
+
+    Component {
+        id: loginComponent
+        Login {}
+    }
+
+    Component {
+        id: dashboardComponent
+        Dashboard {}
+    }
+
+    Connections {
+        target: contentLoader.item
+        ignoreUnknownSignals: true
+
+        function onLoginSucceeded() {
+            contentLoader.sourceComponent = dashboardComponent;
+        }
+        function onLoggedOut() {
+            contentLoader.sourceComponent = loginComponent;
+        }
+    }
+
     Connections {
         target: Config
         function onConfigChanged() {
             ApiClient.baseUrl = Config.baseUrl;
         }
     }
-    Component.onCompleted: ApiClient.baseUrl = Config.baseUrl
+
+    Component.onCompleted: {
+        ApiClient.baseUrl = Config.baseUrl;
+        ApiClient.session = SessionManager;
+    }
 }

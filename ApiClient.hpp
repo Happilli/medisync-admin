@@ -10,6 +10,8 @@ class ApiClient : public QObject {
   QML_SINGLETON
   Q_PROPERTY(
       QString baseUrl READ baseUrl WRITE setBaseUrl NOTIFY baseUrlChanged)
+  Q_PROPERTY(SessionManager *session READ session WRITE setSession NOTIFY
+                 sessionChanged)
 
 public:
   explicit ApiClient(QObject *parent = nullptr);
@@ -19,13 +21,17 @@ public:
   QString baseUrl() const;
   void setBaseUrl(const QString &url);
 
+  SessionManager *session() const;
+  void setSession(SessionManager *s);
+
 signals:
   void loginFinished(bool success, const QString &message);
   void baseUrlChanged();
+  void sessionChanged();
 
 private:
   QNetworkAccessManager *manager;
-  SessionManager *session;
+  SessionManager *m_session = nullptr;
   QString m_baseUrl;
 
   QNetworkRequest buildRequest(const QString &path, bool withAuth = true) const;

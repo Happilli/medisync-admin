@@ -5,8 +5,7 @@
 #include <QUrl>
 
 ApiClient::ApiClient(QObject *parent)
-    : QObject(parent), manager(new QNetworkAccessManager(this)),
-      session(new SessionManager(this)) {}
+    : QObject(parent), manager(new QNetworkAccessManager(this)) {}
 
 QString ApiClient::baseUrl() const { return m_baseUrl; }
 
@@ -18,12 +17,22 @@ void ApiClient::setBaseUrl(const QString &url) {
   emit baseUrlChanged();
 }
 
+SessionManager *ApiClient::session() const { return m_session; }
+
+void ApiClient::setSession(SessionManager *s) {
+  if (m_session == s) {
+    return;
+  }
+  m_session = s;
+  emit sessionChanged();
+}
+
 QNetworkRequest ApiClient::buildRequest(const QString &path,
                                         bool withAuth) const {
   QNetworkRequest request(QUrl(m_baseUrl + path));
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-  if (withAuth) {
-    QString tok = session->token();
+  if (withAuth && m_session) {
+    QString tok = m_session->token();
     if (!tok.isEmpty())
       request.setRawHeader("Authorization", ("Bearer " + tok).toUtf8());
   }
@@ -50,8 +59,10 @@ void ApiClient::login(const QString &email, const QString &password) {
       return;
     }
 
-    session->saveSession(obj.value("access_token").toString(), role,
-                         obj.value("email").toString());
-    emit loginFinished(true, "Logged in");
+    if (m_session) {
+      m_session->saveSession(obj.value("access_token").toString(), role,
+                             obj.value("email").toString());
+      emit loginFinished(true, "Logged in");
+    }
   });
 }
