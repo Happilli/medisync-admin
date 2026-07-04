@@ -8,9 +8,19 @@ ApiClient::ApiClient(QObject *parent)
     : QObject(parent), manager(new QNetworkAccessManager(this)),
       session(new SessionManager(this)) {}
 
+QString ApiClient::baseUrl() const { return m_baseUrl; }
+
+void ApiClient::setBaseUrl(const QString &url) {
+  if (m_baseUrl == url) {
+    return;
+  }
+  m_baseUrl = url;
+  emit baseUrlChanged();
+}
+
 QNetworkRequest ApiClient::buildRequest(const QString &path,
                                         bool withAuth) const {
-  QNetworkRequest request(QUrl(baseUrl + path));
+  QNetworkRequest request(QUrl(m_baseUrl + path));
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
   if (withAuth) {
     QString tok = session->token();

@@ -13,4 +13,11 @@ Window {
     Login {
         anchors.fill: parent
     }
+    Connections {
+        target: Config
+        function onConfigChanged() {
+            ApiClient.baseUrl = Config.baseUrl;
+        }
+    }
+    Component.onCompleted: ApiClient.baseUrl = Config.baseUrl
 }

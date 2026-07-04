@@ -358,11 +358,13 @@ Item {
                 }
             }
 
-            Rectangle {
-                id: avatarCircle
+            ShapeCanvas {
+                id: avatarShapeCanvas
                 anchors.fill: parent
-                radius: width / 2
+                roundedPolygon: GetMShapes.get(19)
                 color: root.showFailure ? Theme.errorColor : Theme.primaryContainerColor
+                borderWidth: 3
+                borderColor: root.showFailure ? Theme.errorColor : Theme.primaryFixedColor
 
                 Behavior on color {
                     ColorAnimation {
@@ -383,14 +385,6 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: passwordInput.forceActiveFocus()
                 }
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                color: "transparent"
-                border.color: root.showFailure ? Theme.errorColor : Theme.primaryFixedColor
-                border.width: 3
             }
         }
 

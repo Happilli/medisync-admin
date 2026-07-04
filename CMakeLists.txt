@@ -16,13 +16,29 @@ set_source_files_properties(application/Theme.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
 
+set_source_files_properties(application/Shapes/GetMShapes.qml PROPERTIES
+    QT_QML_SINGLETON_TYPE TRUE
+)
+
+file(GLOB_RECURSE JS_ABS CONFIGURE_DEPENDS
+ "${CMAKE_CURRENT_SOURCE_DIR}/application/Shapes/*.js")
+
+file(GLOB_RECURSE QML_ABS CONFIGURE_DEPENDS
+ "${CMAKE_CURRENT_SOURCE_DIR}/application/*.qml")
+
+set(ALL_QML_MODULE_FILES_ABS ${JS_ABS} ${QML_ABS})
+
+set(ALL_QML_MODULE_FILES "")
+foreach(_abs_path ${ALL_QML_MODULE_FILES_ABS})
+    file(RELATIVE_PATH _rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${_abs_path}")
+    list(APPEND ALL_QML_MODULE_FILES "${_rel_path}")
+endforeach()
 qt_add_qml_module(medisyncadmin
     URI MediSyncAdmin
     VERSION 1.0
     QML_FILES
-        application/Main.qml
-        application/Login.qml
-        application/Theme.qml
+       ${ALL_QML_MODULE_FILES}
+        
     SOURCES
         ApiClient.cpp
         ApiClient.hpp
