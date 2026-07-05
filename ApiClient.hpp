@@ -18,6 +18,13 @@ public:
 
   Q_INVOKABLE void login(const QString &email, const QString &password);
 
+  // authenticated requests...
+  Q_INVOKABLE void get(const QString &path, const QString &requestId);
+  Q_INVOKABLE void post(const QString &path, const QString &requestId,
+                        const QVariantMap &body = QVariantMap());
+  Q_INVOKABLE void patch(const QString &path, const QString &requestId,
+                         const QVariantMap &body = QVariantMap());
+
   QString baseUrl() const;
   void setBaseUrl(const QString &url);
 
@@ -26,6 +33,8 @@ public:
 
 signals:
   void loginFinished(bool success, const QString &message);
+  void requestFinished(QString requestId, bool success, QVariant data,
+                       QString message);
   void baseUrlChanged();
   void sessionChanged();
 
@@ -35,4 +44,6 @@ private:
   QString m_baseUrl;
 
   QNetworkRequest buildRequest(const QString &path, bool withAuth = true) const;
+  void sendRequest(const QByteArray &method, const QString &path,
+                   const QString &requestId, const QVariantMap &body);
 };
