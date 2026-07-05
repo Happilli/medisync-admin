@@ -50,6 +50,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/*
+          files: build/medisyncadmin
           fail_on_unmatched_files: false
           generate_release_notes: true
