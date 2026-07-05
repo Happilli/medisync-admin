@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -31,3 +31,13 @@ jobs:
 
       - name: Build
         run: cmake --build build --parallel
+      
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-application-linux
+          path: |
+            build/
+            !build/CMake*
+            !build/**/*.o
+            !build/CMakeFiles
