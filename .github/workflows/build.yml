@@ -46,10 +46,16 @@ jobs:
             !build/**/*.o
             !build/CMakeFiles
 
+      - name: Create Release ZIP Archive
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd build
+          zip -r ../compiled-application-linux.zip . -x "CMake*" "CMakeFiles*" "*.o"
+
       - name: Publish to GitHub Releases
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/medisyncadmin
+          files: compiled-application-linux.zip
           fail_on_unmatched_files: true
           generate_release_notes: true
