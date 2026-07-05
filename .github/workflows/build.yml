@@ -18,7 +18,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.7.0'
-          modules: 'qtdeclarative qt5compat qtshadertools'
+          modules: 'qt5compat qtshadertools'
           cache: true
 
       - name: Install build tools
