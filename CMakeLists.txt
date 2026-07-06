@@ -4,7 +4,7 @@ project(medisyncadmin)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickEffects)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickEffects Multimedia)
 
 qt_standard_project_setup()
 
@@ -17,6 +17,10 @@ set_source_files_properties(application/Theme.qml PROPERTIES
 )
 
 set_source_files_properties(application/Shapes/GetMShapes.qml PROPERTIES
+    QT_QML_SINGLETON_TYPE TRUE
+)
+
+set_source_files_properties(application/Sfx.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
 
@@ -69,4 +73,5 @@ target_link_libraries(medisyncadmin PRIVATE
     Qt6::Quick
     Qt6::Network
     Qt6::QuickEffects
+    Qt6::Multimedia
 )

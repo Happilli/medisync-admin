@@ -23,12 +23,14 @@ Item {
     function submitEmail() {
         if (!root.emailValid) {
             shakeAnimation.start();
+            Sfx.playBack();
             return;
         }
         root.currentEmail = emailField.text.trim();
         root.stage = "password";
         passwordInput.text = "";
         passwordFocusTimer.start();
+        Sfx.playChangePane();
     }
 
     function backToEmail() {
@@ -39,6 +41,7 @@ Item {
         root.showFailure = false;
         root.stage = "email";
         emailFocusTimer.start();
+        Sfx.playBack();
     }
 
     focus: true
@@ -55,6 +58,7 @@ Item {
                 root.showFailure = true;
                 passwordInput.text = "";
                 shakeAnimation.start();
+                Sfx.playBack();
                 failureResetTimer.restart();
                 passwordInput.forceActiveFocus();
             }
@@ -400,6 +404,7 @@ Item {
                 root.busy = true;
                 root.statusMessage = "";
                 root.showFailure = false;
+                Sfx.playEnter();
                 ApiClient.login(root.currentEmail, passwordInput.text);
             }
 

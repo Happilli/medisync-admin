@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import MediSyncAdmin
 import "./Patients"
+import "./Hospitals"
 
 Item {
     id: root
@@ -21,6 +22,14 @@ Item {
             icon: "assets/icons/patient.svg",
             accent: Theme.secondaryColor,
             background: "assets/backgrounds/patients.png"
+        },
+        {
+            key: "hospitals",
+            label: "Hospitals",
+            description: "Register and Manage hospitals and its doctors",
+            icon: "assets/icons/hospital.svg",
+            accent: Theme.tertiaryColor,
+            background: "assets/backgrounds/hospitals.png"
         },
         {
             key: "logout",
@@ -44,6 +53,7 @@ Item {
         }
         root.openIndex = root.selectedIndex;
         root.viewState = "open";
+        Sfx.playChangePane();
     }
 
     function closeToMenu() {
@@ -64,15 +74,24 @@ Item {
             root.selectedIndex = 0;
         else if (root.selectedIndex < root.menuItems.length - 1)
             root.selectedIndex += 1;
+        Sfx.playMove();
     }
-    Keys.onLeftPressed: if (root.viewState === "menu" && root.selectedIndex > 0)
-        root.selectedIndex -= 1
-    Keys.onDownPressed: if (root.viewState === "menu" && root.selectedIndex < 0)
-        root.selectedIndex = 0
-    Keys.onReturnPressed: if (root.viewState === "menu")
-        root.openSelected()
-    Keys.onEscapePressed: if (root.viewState === "open")
-        root.closeToMenu()
+    Keys.onLeftPressed: if (root.viewState === "menu" && root.selectedIndex > 0) {
+        root.selectedIndex -= 1;
+        Sfx.playMove();
+    }
+    Keys.onDownPressed: if (root.viewState === "menu" && root.selectedIndex < 0) {
+        root.selectedIndex = 0;
+        Sfx.playMove();
+    }
+    Keys.onReturnPressed: if (root.viewState === "menu") {
+        Sfx.playEnter();
+        root.openSelected();
+    }
+    Keys.onEscapePressed: if (root.viewState === "open") {
+        Sfx.playMove();
+        root.closeToMenu();
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -213,7 +232,6 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Theme.backgroundColor
-            opacity: 0.92
         }
 
         Loader {
@@ -221,8 +239,17 @@ Item {
             anchors.fill: parent
             anchors.margins: 10
             anchors.topMargin: 10
-            sourceComponent: root.openIndex >= 0 ? patientsComponent : null
-
+            sourceComponent: {
+                if (root.openIndex < 0) {
+                    return null;
+                }
+                const key = root.menuItems[root.openIndex].key;
+                if (key === "patients")
+                    return patientsComponent;
+                if (key === "hospitals")
+                    return hospitalsComponent;
+                return null;
+            }
             Behavior on anchors.margins {
                 NumberAnimation {
                     duration: 260
@@ -251,6 +278,10 @@ Item {
         Component {
             id: patientsComponent
             Patient {}
+        }
+        Component {
+            id: hospitalsComponent
+            Hospital {}
         }
     }
 }

@@ -41,13 +41,17 @@ FocusScope {
     focus: true
 
     Keys.onDownPressed: event => {
-        if (root.pendingPatients.length > 0)
+        if (root.pendingPatients.length > 0) {
             root.selectedIndex = Math.min(root.selectedIndex + 1, root.pendingPatients.length - 1);
+            Sfx.playMove();
+        }
         event.accepted = true;
     }
     Keys.onUpPressed: event => {
-        if (root.pendingPatients.length > 0)
+        if (root.pendingPatients.length > 0) {
             root.selectedIndex = root.selectedIndex <= 0 ? 0 : root.selectedIndex - 1;
+            Sfx.playMove();
+        }
         event.accepted = true;
     }
 

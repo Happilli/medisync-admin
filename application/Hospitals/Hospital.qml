@@ -12,9 +12,9 @@ FocusScope {
 
     readonly property var menuItems: [
         {
-            key: "verification",
-            label: "Verification",
-            accent: Theme.secondaryColor
+            key: "create",
+            label: "New Hospital",
+            accent: Theme.tertiaryColor
         },
         {
             key: "back",
@@ -28,8 +28,9 @@ FocusScope {
 
     onViewStateChanged: {
         root.expansionChanged(root.viewState === "content");
-        if (root.viewState !== "content")
+        if (root.viewState !== "content") {
             root.forceActiveFocus();
+        }
     }
 
     Keys.onUpPressed: if (root.viewState === "menu" && root.selectedIndex > 0) {
@@ -45,13 +46,14 @@ FocusScope {
         Sfx.playBack();
     }
     Keys.onReturnPressed: {
-        if (root.viewState !== "menu")
+        if (root.viewState !== "menu") {
             return;
+        }
         const key = root.menuItems[root.selectedIndex].key;
         if (key === "back") {
             Sfx.playBack();
             root.backRequested();
-        } else if (key === "verification") {
+        } else if (key === "create") {
             Sfx.playChangePane();
             root.viewState = "content";
         }
@@ -69,7 +71,6 @@ FocusScope {
         anchors.fill: parent
         color: Theme.backgroundColor
     }
-
     Item {
         id: container
         anchors.fill: parent
@@ -164,7 +165,7 @@ FocusScope {
             x: root.viewState === "menu" ? 228 : 0
             width: root.viewState === "menu" ? parent.width - 228 : parent.width
             enabled: root.viewState === "content"
-            sourceComponent: verificationComponent
+            sourceComponent: hospitalCreateComponent
 
             Behavior on x {
                 NumberAnimation {
@@ -189,7 +190,7 @@ FocusScope {
     }
 
     Component {
-        id: verificationComponent
-        PatientVerification {}
+        id: hospitalCreateComponent
+        HospitalCreate {}
     }
 }

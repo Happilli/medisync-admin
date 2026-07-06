@@ -218,6 +218,7 @@ Item {
                     }
                 }
             }
+
             Column {
                 width: parent.width
                 spacing: 16
@@ -239,6 +240,7 @@ Item {
                     property bool dragging: false
                     readonly property real trackMargin: 6
                     readonly property real thumbWidth: 58
+                    readonly property int snapDuration: 260
                     readonly property real maxX: slideToVerify.width - slideToVerify.thumbWidth - slideToVerify.trackMargin
                     readonly property real progress: Math.max(0, Math.min(1, (thumb.x - slideToVerify.trackMargin) / Math.max(1, slideToVerify.maxX - slideToVerify.trackMargin)))
 
@@ -276,14 +278,6 @@ Item {
                         radius: height / 2
                         color: Theme.primaryContainerColor
                         opacity: 0.55
-
-                        Behavior on width {
-                            enabled: !slideToVerify.dragging
-                            NumberAnimation {
-                                duration: 220
-                                easing.type: Easing.OutCubic
-                            }
-                        }
                     }
 
                     Text {
@@ -292,7 +286,14 @@ Item {
                         font.pixelSize: 15
                         font.bold: true
                         color: Theme.onSurfaceVariant
-                        opacity: 1 - slideToVerify.progress * 0.9
+                        opacity: slideToVerify.confirmed ? 1 : Math.max(0, 1 - slideToVerify.progress * 1.6)
+
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     Item {
@@ -305,7 +306,7 @@ Item {
                         Behavior on x {
                             enabled: !slideToVerify.dragging
                             NumberAnimation {
-                                duration: 260
+                                duration: slideToVerify.snapDuration
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -315,7 +316,7 @@ Item {
                             color: Theme.primaryColor
                             borderWidth: slideToVerify.dragging ? 3 : 1
                             borderColor: Theme.primaryFixedColor
-                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(14) : GetMShapes.get(8))
+                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(26) : GetMShapes.get(8))
                             animation: NumberAnimation {
                                 duration: 200
                                 easing.type: Easing.OutCubic
@@ -345,6 +346,7 @@ Item {
                                 if (thumb.x >= slideToVerify.maxX * 0.9) {
                                     thumb.x = slideToVerify.maxX;
                                     slideToVerify.confirmed = true;
+                                    Sfx.playEnter();
                                     if (root.patient) {
                                         ApiClient.post("/patients/" + root.patient.id + "/verify", "verifyPatient:" + root.patient.id);
                                     }
