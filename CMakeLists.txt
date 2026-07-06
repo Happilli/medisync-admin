@@ -58,6 +58,8 @@ qt_add_qml_module(medisyncadmin
         SessionManager.hpp
         ConfigManager.cpp
         ConfigManager.hpp
+        AuthImageProvider.cpp
+        AuthImageProvider.hpp
 )
 
 target_link_libraries(medisyncadmin PRIVATE
