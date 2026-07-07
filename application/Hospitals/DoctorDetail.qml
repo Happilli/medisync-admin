@@ -1,65 +1,73 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Effects
 import MediSyncAdmin
+import QtQuick.Effects
 
-Item {
+FocusScope {
     id: root
 
-    property int patientId: -1
-    property var patientData: null
+    signal backRequested
+
+    property int hospitalId: -1
+    property int doctorId: -1
+    property var doctorData: null
     property bool loading: false
     property string loadError: ""
 
-    readonly property bool hasCitizenshipPhoto: !!(root.patientData && root.patientData.citizenship_photo_url)
+    readonly property bool hasLicensePhoto: !!(root.doctorData && root.doctorData.license_photo_url)
 
-    onPatientIdChanged: root.fetchPatient()
+    focus: true
 
-    function fetchPatient() {
-        if (root.patientId < 0) {
-            root.patientData = null;
+    onDoctorIdChanged: root.fetchDoctor()
+    onVisibleChanged: if (root.visible) {
+        root.fetchDoctor();
+        root.forceActiveFocus();
+    }
+
+    Keys.onEscapePressed: root.backRequested()
+
+    function fetchDoctor() {
+        if (root.hospitalId < 0 || root.doctorId < 0) {
             return;
         }
         root.loading = true;
         root.loadError = "";
-        root.patientData = null;
-        ApiClient.get("/patients/" + root.patientId, "patientDetail:" + root.patientId);
+        root.doctorData = null;
+        ApiClient.get("/hospitals/" + root.hospitalId + "/doctors/" + root.doctorId, "doctorDetail:" + root.doctorId);
     }
 
     Connections {
         target: ApiClient
         function onRequestFinished(requestId, success, data, message) {
-            if (requestId === "patientDetail:" + root.patientId) {
+            if (requestId === "doctorDetail:" + root.doctorId) {
                 root.loading = false;
                 if (success) {
-                    root.patientData = data;
+                    root.doctorData = data;
                 } else {
                     root.loadError = message;
                 }
-            } else if (requestId === "verifyPatient:" + root.patientId) {
-                if (success)
-                    root.fetchPatient();
+            } else if (requestId === "verifyDoctor:" + root.doctorId) {
+                if (success) {
+                    root.backRequested();
+                }
             }
         }
     }
 
-    Text {
-        visible: root.patientId < 0
-        anchors.centerIn: parent
-        text: "Select a patient to review"
-        font.pixelSize: 16
-        color: Theme.onSurfaceVariant
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.surfaceContainer
     }
 
     Text {
-        visible: root.patientId >= 0 && root.loading
+        visible: root.loading
         anchors.centerIn: parent
         text: "Loading…"
         font.pixelSize: 14
         color: Theme.onSurfaceVariant
     }
     Text {
-        visible: root.patientId >= 0 && !root.loading && root.loadError.length > 0
+        visible: !root.loading && root.loadError.length > 0
         anchors.centerIn: parent
         text: root.loadError
         font.pixelSize: 14
@@ -69,7 +77,7 @@ Item {
     Flickable {
         anchors.fill: parent
         anchors.margins: 40
-        visible: !root.loading && root.patientData !== null
+        visible: !root.loading && root.doctorData !== null
         contentWidth: width
         contentHeight: detailColumn.height
         clip: true
@@ -85,20 +93,20 @@ Item {
                 spacing: 6
 
                 Text {
-                    text: "Patient Review"
+                    text: "Doctor Review"
                     font.pixelSize: 13
                     font.bold: true
                     color: Theme.primaryFixedDim
                     font.letterSpacing: 1.5
                 }
                 Text {
-                    text: root.patientData ? (root.patientData.name ?? "") : ""
+                    text: root.doctorData ? (root.doctorData.name ?? "") : ""
                     font.pixelSize: 34
                     font.bold: true
                     color: Theme.onSurface
                 }
                 Text {
-                    text: root.patientData ? ("Patient ID: " + String(root.patientData.id)) : ""
+                    text: root.doctorData ? ("Doctor ID: " + String(root.doctorData.id)) : ""
                     font.pixelSize: 13
                     color: Theme.onSurfaceVariant
                 }
@@ -123,34 +131,34 @@ Item {
                     rowSpacing: 24
 
                     Repeater {
-                        model: root.patientData ? [
+                        model: root.doctorData ? [
                             {
                                 label: "Phone",
-                                value: root.patientData.phone
+                                value: root.doctorData.phone
+                            },
+                            {
+                                label: "Department",
+                                value: root.doctorData.department
+                            },
+                            {
+                                label: "Speciality",
+                                value: root.doctorData.speciality
                             },
                             {
                                 label: "Address",
-                                value: root.patientData.address
+                                value: root.doctorData.address
                             },
                             {
-                                label: "Date of birth",
-                                value: root.patientData.date_of_birth
+                                label: "Years experience",
+                                value: root.doctorData.years_experience
                             },
                             {
-                                label: "Gender",
-                                value: root.patientData.gender
+                                label: "License number",
+                                value: root.doctorData.license_number
                             },
                             {
-                                label: "Blood group",
-                                value: root.patientData.blood_group
-                            },
-                            {
-                                label: "Emergency contact",
-                                value: root.patientData.emergency_contact
-                            },
-                            {
-                                label: "Citizenship no.",
-                                value: root.patientData.citizenship_number
+                                label: "Bio",
+                                value: root.doctorData.bio
                             }
                         ] : []
 
@@ -181,10 +189,10 @@ Item {
             Column {
                 width: parent.width
                 spacing: 14
-                visible: root.hasCitizenshipPhoto
+                visible: root.hasLicensePhoto
 
                 Text {
-                    text: "Citizenship photo"
+                    text: "License photo"
                     font.pixelSize: 16
                     font.bold: true
                     color: Theme.onSurface
@@ -201,23 +209,24 @@ Item {
                     border.color: Theme.outlineVariant
 
                     Image {
-                        id: citizenshipImage
+                        id: licenseImage
                         anchors.fill: parent
                         anchors.margins: 2
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
-                        source: root.hasCitizenshipPhoto ? "image://authimg/" + root.patientData.citizenship_photo_url : ""
+                        source: root.hasLicensePhoto ? "image://authimg/" + root.doctorData.license_photo_url : ""
                     }
+
                     Text {
                         anchors.centerIn: parent
-                        visible: citizenshipImage.status === Image.Loading
+                        visible: licenseImage.status === Image.Loading
                         text: "Loading…"
                         font.pixelSize: 13
                         color: Theme.onSurfaceVariant
                     }
                     Text {
                         anchors.centerIn: parent
-                        visible: citizenshipImage.status === Image.Error
+                        visible: licenseImage.status === Image.Error
                         text: "Could not load image"
                         font.pixelSize: 13
                         color: Theme.errorColor
@@ -238,14 +247,14 @@ Item {
                         radius: width / 2
                         clip: false
                         color: Theme.surfaceContainerHighest
-                        visible: zoomArea.containsMouse && citizenshipImage.status === Image.Ready
+                        visible: zoomArea.containsMouse && licenseImage.status === Image.Ready
 
-                        readonly property real localX: zoomArea.mouseX - citizenshipImage.x
-                        readonly property real localY: zoomArea.mouseY - citizenshipImage.y
-                        readonly property real offsetX: (citizenshipImage.width - citizenshipImage.paintedWidth) / 2
-                        readonly property real offsetY: (citizenshipImage.height - citizenshipImage.paintedHeight) / 2
-                        readonly property real fx: citizenshipImage.paintedWidth > 0 ? Math.min(Math.max((lens.localX - lens.offsetX) / citizenshipImage.paintedWidth, 0), 1) : 0
-                        readonly property real fy: citizenshipImage.paintedHeight > 0 ? Math.min(Math.max((lens.localY - lens.offsetY) / citizenshipImage.paintedHeight, 0), 1) : 0
+                        readonly property real localX: zoomArea.mouseX - licenseImage.x
+                        readonly property real localY: zoomArea.mouseY - licenseImage.y
+                        readonly property real offsetX: (licenseImage.width - licenseImage.paintedWidth) / 2
+                        readonly property real offsetY: (licenseImage.height - licenseImage.paintedHeight) / 2
+                        readonly property real fx: licenseImage.paintedWidth > 0 ? Math.min(Math.max((lens.localX - lens.offsetX) / licenseImage.paintedWidth, 0), 1) : 0
+                        readonly property real fy: licenseImage.paintedHeight > 0 ? Math.min(Math.max((lens.localY - lens.offsetY) / licenseImage.paintedHeight, 0), 1) : 0
                         readonly property real zoomFactor: 2.5
 
                         x: Math.min(Math.max(zoomArea.mouseX - width / 2, 0), photoFrame.width - width)
@@ -262,9 +271,9 @@ Item {
 
                             Image {
                                 id: zoomedImage
-                                source: citizenshipImage.source
-                                width: citizenshipImage.paintedWidth * lens.zoomFactor
-                                height: citizenshipImage.paintedHeight * lens.zoomFactor
+                                source: licenseImage.source
+                                width: licenseImage.paintedWidth * lens.zoomFactor
+                                height: licenseImage.paintedHeight * lens.zoomFactor
                                 x: lens.width / 2 - lens.fx * width
                                 y: lens.height / 2 - lens.fy * height
                                 smooth: true
@@ -281,11 +290,10 @@ Item {
                     }
                 }
             }
-
             Column {
                 width: parent.width
                 spacing: 16
-                visible: root.patientData !== null && !root.patientData.is_verified
+                visible: root.doctorData !== null && !root.doctorData.is_verified
 
                 Text {
                     text: "Finalize"
@@ -311,12 +319,9 @@ Item {
                         thumb.x = slideToVerify.trackMargin;
                     }
 
-                    onVisibleChanged: if (visible)
-                        slideToVerify.reset()
-
                     Connections {
                         target: root
-                        function onPatientIdChanged() {
+                        function onDoctorIdChanged() {
                             slideToVerify.reset();
                         }
                     }
@@ -341,7 +346,7 @@ Item {
                     }
                     Text {
                         anchors.centerIn: parent
-                        text: slideToVerify.confirmed ? "Verified" : "Slide to verify patient"
+                        text: slideToVerify.confirmed ? "Verified" : "Slide to verify doctor"
                         font.pixelSize: 15
                         font.bold: true
                         color: Theme.onSurfaceVariant
@@ -374,7 +379,7 @@ Item {
                             color: Theme.primaryColor
                             borderWidth: slideToVerify.dragging ? 3 : 1
                             borderColor: Theme.primaryFixedColor
-                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(26) : GetMShapes.get(8))
+                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(22) : GetMShapes.get(8))
                             animation: NumberAnimation {
                                 duration: 200
                                 easing.type: Easing.OutCubic
@@ -404,7 +409,7 @@ Item {
                                     thumb.x = slideToVerify.maxX;
                                     slideToVerify.confirmed = true;
                                     Sfx.playEnter();
-                                    ApiClient.post("/patients/" + root.patientId + "/verify", "verifyPatient:" + root.patientId);
+                                    ApiClient.patch("/hospitals/" + root.hospitalId + "/doctors/" + root.doctorId + "/verify", "verifyDoctor:" + root.doctorId);
                                 } else {
                                     thumb.x = slideToVerify.trackMargin;
                                 }

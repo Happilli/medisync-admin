@@ -5,24 +5,21 @@ import MediSyncAdmin
 FocusScope {
     id: root
 
-    property var pendingPatients: []
+    property bool focusRequested: false
+    property var patientsList: []
     property bool loadingList: false
     property string listError: ""
-    property int selectedIndex: -1
-    property bool focusRequested: false
+    property int selectedPatientId: -1
 
     readonly property var accentPalette: [Theme.primaryColor, Theme.secondaryColor, Theme.tertiaryColor, Theme.primaryFixedDim]
-    readonly property var selectedPatient: root.selectedIndex >= 0 && root.selectedIndex < root.pendingPatients.length ? root.pendingPatients[root.selectedIndex] : null
 
     Component.onCompleted: {
-        if (root.pendingPatients.length === 0 && !root.loadingList)
-            root.refreshPendingPatients();
+        if (root.patientsList.length === 0 && !root.loadingList)
+            root.refreshPatients();
     }
 
-    onFocusRequestedChanged: {
-        if (root.focusRequested)
-            root.forceActiveFocus();
-    }
+    onFocusRequestedChanged: if (root.focusRequested)
+        root.forceActiveFocus()
 
     function accentFor(key) {
         let hash = 0;
@@ -31,25 +28,28 @@ FocusScope {
         return root.accentPalette[hash % root.accentPalette.length];
     }
 
-    function refreshPendingPatients() {
+    function refreshPatients() {
         root.loadingList = true;
         root.listError = "";
-        root.selectedIndex = -1;
-        ApiClient.get("/patients/pending", "pendingPatients");
+        ApiClient.get("/patients/", "allPatients");
     }
 
     focus: true
 
     Keys.onDownPressed: event => {
-        if (root.pendingPatients.length > 0) {
-            root.selectedIndex = Math.min(root.selectedIndex + 1, root.pendingPatients.length - 1);
+        if (root.patientsList.length > 0) {
+            const idx = root.patientsList.findIndex(p => p.id === root.selectedPatientId);
+            const next = idx < 0 ? 0 : Math.min(idx + 1, root.patientsList.length - 1);
+            root.selectedPatientId = root.patientsList[next].id;
             Sfx.playMove();
         }
         event.accepted = true;
     }
     Keys.onUpPressed: event => {
-        if (root.pendingPatients.length > 0) {
-            root.selectedIndex = root.selectedIndex <= 0 ? 0 : root.selectedIndex - 1;
+        if (root.patientsList.length > 0) {
+            const idx = root.patientsList.findIndex(p => p.id === root.selectedPatientId);
+            const prev = idx <= 0 ? 0 : idx - 1;
+            root.selectedPatientId = root.patientsList[prev].id;
             Sfx.playMove();
         }
         event.accepted = true;
@@ -58,19 +58,15 @@ FocusScope {
     Connections {
         target: ApiClient
         function onRequestFinished(requestId, success, data, message) {
-            if (requestId === "pendingPatients") {
+            if (requestId === "allPatients") {
                 root.loadingList = false;
-                root.pendingPatients = success ? (data ?? []) : [];
+                root.patientsList = success ? (data ?? []) : [];
                 if (!success)
                     root.listError = message;
-                if (root.pendingPatients.length > 0)
-                    root.selectedIndex = 0;
-            } else if (requestId.indexOf("verifyPatient:") === 0) {
-                if (success) {
-                    root.refreshPendingPatients();
-                } else {
-                    root.listError = message;
-                }
+                if (root.patientsList.length > 0 && root.selectedPatientId < 0)
+                    root.selectedPatientId = root.patientsList[0].id;
+            } else if (requestId.indexOf("verifyPatient:") === 0 && success) {
+                root.refreshPatients();
             }
         }
     }
@@ -96,7 +92,6 @@ FocusScope {
                     font.pixelSize: 12
                     color: Theme.onSurfaceVariant
                 }
-
                 Text {
                     visible: !root.loadingList && root.listError.length > 0
                     width: parent.width
@@ -105,10 +100,9 @@ FocusScope {
                     font.pixelSize: 12
                     wrapMode: Text.WordWrap
                 }
-
                 Text {
-                    visible: !root.loadingList && root.listError.length === 0 && root.pendingPatients.length === 0
-                    text: "No pending patients."
+                    visible: !root.loadingList && root.listError.length === 0 && root.patientsList.length === 0
+                    text: "No patients found."
                     color: Theme.onSurfaceVariant
                     font.pixelSize: 13
                 }
@@ -119,8 +113,8 @@ FocusScope {
                     height: parent.height - 40
                     clip: true
                     spacing: 4
-                    model: root.pendingPatients
-                    currentIndex: root.selectedIndex
+                    model: root.patientsList
+                    currentIndex: root.patientsList.findIndex(p => p.id === root.selectedPatientId)
                     highlightMoveDuration: 120
                     cacheBuffer: 400
 
@@ -131,7 +125,7 @@ FocusScope {
                         required property var modelData
                         required property int index
 
-                        readonly property bool isSelected: root.selectedIndex === rowDelegate.index
+                        readonly property bool isSelected: root.selectedPatientId === rowDelegate.modelData.id
                         readonly property color accent: root.accentFor((rowDelegate.modelData.id ?? rowDelegate.modelData.name ?? "x") + "")
                         readonly property string photoUrl: rowDelegate.modelData.profile_pic_url ?? ""
 
@@ -180,14 +174,24 @@ FocusScope {
                                 }
                             }
 
-                            Text {
+                            Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: patientListView.width - 70
-                                text: rowDelegate.modelData.name ?? ""
-                                font.pixelSize: 14
-                                font.bold: rowDelegate.isSelected
-                                color: Theme.onSurface
-                                elide: Text.ElideRight
+                                spacing: 2
+
+                                Text {
+                                    width: parent.width
+                                    text: rowDelegate.modelData.name ?? ""
+                                    font.pixelSize: 14
+                                    font.bold: rowDelegate.isSelected
+                                    color: Theme.onSurface
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    text: rowDelegate.modelData.is_verified ? "Verified" : "Pending"
+                                    font.pixelSize: 11
+                                    color: rowDelegate.modelData.is_verified ? Theme.primaryFixedDim : Theme.errorColor
+                                }
                             }
                         }
 
@@ -195,7 +199,7 @@ FocusScope {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                root.selectedIndex = rowDelegate.index;
+                                root.selectedPatientId = rowDelegate.modelData.id;
                                 root.forceActiveFocus();
                             }
                         }
@@ -209,7 +213,7 @@ FocusScope {
             height: parent.height
             clip: true
             visible: root.focusRequested
-            patient: root.selectedPatient
+            patientId: root.selectedPatientId
         }
     }
 }

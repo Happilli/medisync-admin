@@ -6,6 +6,49 @@ Item {
     id: root
 
     property var hospital: null
+    property int selectedDoctorId: -1
+
+    property var doctorsList: []
+    property bool loadingDoctors: false
+    property string doctorsError: ""
+
+    readonly property var accentPalette: [Theme.primaryColor, Theme.secondaryColor, Theme.tertiaryColor, Theme.primaryFixedDim]
+
+    function accentFor(key) {
+        let hash = 0;
+        for (let i = 0; i < key.length; i++)
+            hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+        return root.accentPalette[hash % root.accentPalette.length];
+    }
+
+    function refreshDoctors() {
+        if (root.hospital === null)
+            return;
+        root.loadingDoctors = true;
+        root.doctorsError = "";
+        root.doctorsList = [];
+        ApiClient.get("/hospitals/" + root.hospital.id + "/doctors", "hospitalDoctors:" + root.hospital.id);
+    }
+
+    onHospitalChanged: {
+        root.selectedDoctorId = -1;
+        root.refreshDoctors();
+    }
+
+    Connections {
+        target: ApiClient
+        function onRequestFinished(requestId, success, data, message) {
+            if (root.hospital && requestId === "hospitalDoctors:" + root.hospital.id) {
+                root.loadingDoctors = false;
+                root.doctorsList = success ? (data ?? []) : [];
+                if (!success) {
+                    root.doctorsError = message;
+                }
+            } else if (requestId.indexOf("verifyDoctor:") === 0 && success) {
+                root.refreshDoctors();
+            }
+        }
+    }
 
     Text {
         visible: root.hospital === null
@@ -18,7 +61,7 @@ Item {
     Flickable {
         anchors.fill: parent
         anchors.margins: 40
-        visible: root.hospital !== null
+        visible: root.hospital !== null && root.selectedDoctorId < 0
         contentWidth: width
         contentHeight: detailColumn.height
         clip: true
@@ -127,7 +170,7 @@ Item {
                             }
                             Text {
                                 width: parent.width
-                                text: (fieldItem.modelData.value ?? "") !== "" ? String(fieldItem.modelData.value) : "—"
+                                text: (fieldItem.modelData.value ?? "") !== "" ? String(fieldItem.modelData.value) : "-"
                                 font.pixelSize: 16
                                 color: Theme.onSurface
                                 wrapMode: Text.WordWrap
@@ -136,6 +179,125 @@ Item {
                     }
                 }
             }
+
+            Column {
+                width: parent.width
+                spacing: 16
+
+                Text {
+                    text: "Doctors"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: Theme.onSurface
+                }
+
+                Text {
+                    visible: root.loadingDoctors
+                    text: "Syncing…"
+                    font.pixelSize: 12
+                    color: Theme.onSurfaceVariant
+                }
+                Text {
+                    visible: !root.loadingDoctors && root.doctorsError.length > 0
+                    text: root.doctorsError
+                    color: Theme.errorColor
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    visible: !root.loadingDoctors && root.doctorsError.length === 0 && root.doctorsList.length === 0
+                    text: "No doctors registered under this hospital."
+                    color: Theme.onSurfaceVariant
+                    font.pixelSize: 13
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 12
+
+                    Repeater {
+                        model: root.doctorsList
+
+                        delegate: Rectangle {
+                            id: docCard
+                            required property var modelData
+
+                            readonly property color accent: root.accentFor((docCard.modelData.id ?? docCard.modelData.name ?? "x") + "")
+                            readonly property string photoUrl: docCard.modelData.profile_pic_url ?? ""
+
+                            width: 180
+                            height: 64
+                            radius: 12
+                            color: Theme.surfaceContainerHigh
+                            border.width: 1
+                            border.color: docCard.modelData.is_verified ? Theme.outlineVariant : Theme.errorColor
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 10
+
+                                Item {
+                                    width: 40
+                                    height: 40
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    ShapeCanvas {
+                                        anchors.fill: parent
+                                        color: docCard.accent
+                                        borderWidth: 2
+                                        borderColor: Theme.secondaryFixedColor
+                                        roundedPolygon: GetMShapes.get(20)
+                                        imageSource: docCard.photoUrl.length > 0 ? (Config.baseUrl + docCard.photoUrl) : ""
+                                    }
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: docCard.photoUrl.length === 0
+                                        text: (docCard.modelData.name ?? "?").charAt(0).toUpperCase()
+                                        font.pixelSize: 15
+                                        font.bold: true
+                                        color: Theme.onPrimary
+                                    }
+                                }
+
+                                Column {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - 50
+                                    spacing: 2
+
+                                    Text {
+                                        width: parent.width
+                                        text: docCard.modelData.name ?? ""
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        color: Theme.onSurface
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        text: docCard.modelData.is_verified ? "Verified" : "Pending"
+                                        font.pixelSize: 11
+                                        color: docCard.modelData.is_verified ? Theme.primaryFixedDim : Theme.errorColor
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.selectedDoctorId = docCard.modelData.id
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    DoctorDetail {
+        anchors.fill: parent
+        visible: root.selectedDoctorId >= 0
+        hospitalId: root.hospital ? root.hospital.id : -1
+        doctorId: root.selectedDoctorId
+        onBackRequested: root.selectedDoctorId = -1
     }
 }

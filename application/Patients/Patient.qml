@@ -13,7 +13,7 @@ FocusScope {
     readonly property var menuItems: [
         {
             key: "verification",
-            label: "Verification",
+            label: "Manage Patients",
             accent: Theme.secondaryColor
         },
         {
