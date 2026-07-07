@@ -17,6 +17,11 @@ FocusScope {
             accent: Theme.tertiaryColor
         },
         {
+            key: "manage",
+            label: "Manage Hospitals",
+            accent: Theme.secondaryColor
+        },
+        {
             key: "back",
             label: "Back",
             accent: Theme.onSurfaceVariant
@@ -53,7 +58,7 @@ FocusScope {
         if (key === "back") {
             Sfx.playBack();
             root.backRequested();
-        } else if (key === "create") {
+        } else {
             Sfx.playChangePane();
             root.viewState = "content";
         }
@@ -165,7 +170,15 @@ FocusScope {
             x: root.viewState === "menu" ? 228 : 0
             width: root.viewState === "menu" ? parent.width - 228 : parent.width
             enabled: root.viewState === "content"
-            sourceComponent: hospitalCreateComponent
+            sourceComponent: {
+                const key = root.menuItems[root.selectedIndex].key;
+                if (key == "create") {
+                    return hospitalCreateComponent;
+                }
+                if (key == "manage") {
+                    return hospitalManageComponent;
+                }
+            }
 
             Behavior on x {
                 NumberAnimation {
@@ -192,5 +205,9 @@ FocusScope {
     Component {
         id: hospitalCreateComponent
         HospitalCreate {}
+    }
+    Component {
+        id: hospitalManageComponent
+        HospitalManage {}
     }
 }
