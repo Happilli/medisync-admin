@@ -374,7 +374,7 @@ Item {
                             color: Theme.primaryColor
                             borderWidth: slideToVerify.dragging ? 3 : 1
                             borderColor: Theme.primaryFixedColor
-                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(26) : GetMShapes.get(8))
+                            roundedPolygon: slideToVerify.confirmed ? GetMShapes.get(19) : (slideToVerify.dragging ? GetMShapes.get(22) : GetMShapes.get(8))
                             animation: NumberAnimation {
                                 duration: 200
                                 easing.type: Easing.OutCubic

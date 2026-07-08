@@ -32,6 +32,14 @@ Item {
             background: "assets/backgrounds/hospitals.png"
         },
         {
+            key: "notifications",
+            label: "Notifications",
+            description: "View all the notifications..",
+            icon: "assets/icons/notification.svg",
+            accent: Theme.primaryColor,
+            background: "assets/backgrounds/hospitals.png"
+        },
+        {
             key: "logout",
             label: "Logout",
             description: "Sign out of this admin session",
@@ -248,6 +256,9 @@ Item {
                     return patientsComponent;
                 if (key === "hospitals")
                     return hospitalsComponent;
+                if (key === "notifications") {
+                    return notificationsComponent;
+                }
                 return null;
             }
             Behavior on anchors.margins {
@@ -282,6 +293,10 @@ Item {
         Component {
             id: hospitalsComponent
             Hospital {}
+        }
+        Component {
+            id: notificationsComponent
+            NotificationCenter {}
         }
     }
 }

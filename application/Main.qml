@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import MediSyncAdmin
@@ -32,8 +33,10 @@ Window {
 
         function onLoginSucceeded() {
             contentLoader.sourceComponent = dashboardComponent;
+            NotificationClient.connectNow();
         }
         function onLoggedOut() {
+            NotificationClient.disconnectNow();
             contentLoader.sourceComponent = loginComponent;
         }
     }
@@ -42,11 +45,16 @@ Window {
         target: Config
         function onConfigChanged() {
             ApiClient.baseUrl = Config.baseUrl;
+            NotificationClient.baseUrl = Config.baseUrl;
         }
     }
 
     Component.onCompleted: {
         ApiClient.baseUrl = Config.baseUrl;
         ApiClient.session = SessionManager;
+        NotificationClient.baseUrl = Config.baseUrl;
+        NotificationClient.session = SessionManager;
+        if (SessionManager.isLoggedIn())
+            NotificationClient.connectNow();
     }
 }

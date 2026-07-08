@@ -4,7 +4,7 @@ project(medisyncadmin)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickEffects Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickEffects Multimedia WebSockets)
 
 qt_standard_project_setup()
 
@@ -64,6 +64,8 @@ qt_add_qml_module(medisyncadmin
         ConfigManager.hpp
         AuthImageProvider.cpp
         AuthImageProvider.hpp
+        NotificationClient.cpp
+        NotificationClient.hpp
 )
 
 target_link_libraries(medisyncadmin PRIVATE
@@ -73,5 +75,6 @@ target_link_libraries(medisyncadmin PRIVATE
     Qt6::Quick
     Qt6::Network
     Qt6::QuickEffects
-    Qt6::Multimedia
+    Qt6::Multimedia 
+    Qt6::WebSockets
 )
