@@ -24,6 +24,7 @@ public:
                         const QVariantMap &body = QVariantMap());
   Q_INVOKABLE void patch(const QString &path, const QString &requestId,
                          const QVariantMap &body = QVariantMap());
+  Q_INVOKABLE void del(const QString &path, const QString &requestId);
 
   QString baseUrl() const;
   void setBaseUrl(const QString &url);

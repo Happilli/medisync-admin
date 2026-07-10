@@ -81,6 +81,10 @@ void ApiClient::patch(const QString &path, const QString &requestId,
                       const QVariantMap &body) {
   sendRequest("PATCH", path, requestId, body);
 }
+void ApiClient::del(const QString &path, const QString &requestId) {
+  sendRequest("DELETE", path, requestId, QVariantMap());
+}
+
 void ApiClient::sendRequest(const QByteArray &method, const QString &path,
                             const QString &requestId, const QVariantMap &body) {
   QNetworkRequest request = buildRequest(path, true);
@@ -94,6 +98,8 @@ void ApiClient::sendRequest(const QByteArray &method, const QString &path,
     reply = manager->post(request, payload);
   } else if (method == "PATCH") {
     reply = manager->sendCustomRequest(request, "PATCH", payload);
+  } else if (method == "DELETE") {
+    reply = manager->deleteResource(request);
   } else {
     return;
   }
