@@ -62,6 +62,9 @@ FocusScope {
                     root.listError = message;
                 if (root.hospitalsList.length > 0 && root.selectedIndex < 0)
                     root.selectedIndex = 0;
+            } else if (requestId.indexOf("deleteHospital:") === 0 && success) {
+                root.selectedIndex = -1;
+                root.refreshHospitals();
             }
         }
     }

@@ -67,6 +67,9 @@ FocusScope {
                     root.selectedPatientId = root.patientsList[0].id;
             } else if (requestId.indexOf("verifyPatient:") === 0 && success) {
                 root.refreshPatients();
+            } else if (requestId.indexOf("deletePatient:") === 0 && success) {
+                root.selectedPatientId = -1;
+                root.refreshPatients();
             }
         }
     }

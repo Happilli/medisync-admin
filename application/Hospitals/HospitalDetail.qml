@@ -46,6 +46,8 @@ Item {
                 }
             } else if (requestId.indexOf("verifyDoctor:") === 0 && success) {
                 root.refreshDoctors();
+            } else if (root.hospital && requestId === "deleteHospital:" + root.hospital.id && success) {
+                root.hospital = null;
             }
         }
     }
@@ -285,6 +287,139 @@ Item {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.selectedDoctorId = docCard.modelData.id
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 16
+                visible: root.hospital !== null
+
+                Text {
+                    text: "Danger zone"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: Theme.errorColor
+                }
+
+                Text {
+                    width: parent.width
+                    text: "Deleting a hospital permanently removes it and every doctor registered under it. This cannot be undone."
+                    font.pixelSize: 13
+                    color: Theme.onSurfaceVariant
+                    wrapMode: Text.WordWrap
+                }
+
+                Item {
+                    id: slideToDelete
+                    width: Math.min(420, parent.width)
+                    height: 68
+
+                    property bool confirmed: false
+                    property bool dragging: false
+                    readonly property real trackMargin: 6
+                    readonly property real thumbWidth: 58
+                    readonly property real maxX: slideToDelete.width - slideToDelete.thumbWidth - slideToDelete.trackMargin
+                    readonly property real progress: Math.max(0, Math.min(1, (deleteThumb.x - slideToDelete.trackMargin) / Math.max(1, slideToDelete.maxX - slideToDelete.trackMargin)))
+
+                    function reset() {
+                        slideToDelete.confirmed = false;
+                        deleteThumb.x = slideToDelete.trackMargin;
+                    }
+
+                    Connections {
+                        target: root
+                        function onHospitalChanged() {
+                            slideToDelete.reset();
+                        }
+                    }
+
+                    Rectangle {
+                        id: deleteTrack
+                        anchors.fill: parent
+                        radius: height / 2
+                        color: Theme.surfaceContainerHighest
+                        border.width: 1
+                        border.color: Theme.errorColor
+                    }
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.margins: slideToDelete.trackMargin
+                        width: Math.max(0, deleteThumb.x - slideToDelete.trackMargin + slideToDelete.thumbWidth / 2)
+                        radius: height / 2
+                        color: Theme.errorContainerColor
+                        opacity: 0.55
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        text: slideToDelete.confirmed ? "Deleting…" : "Slide to permanently delete hospital"
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: Theme.errorColor
+                        opacity: slideToDelete.confirmed ? 1 : Math.max(0, 1 - slideToDelete.progress * 1.6)
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 120
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: deleteThumb
+                        width: slideToDelete.thumbWidth
+                        height: parent.height - slideToDelete.trackMargin * 2
+                        y: slideToDelete.trackMargin
+                        x: slideToDelete.trackMargin
+
+                        Behavior on x {
+                            enabled: !slideToDelete.dragging
+                            NumberAnimation {
+                                duration: 260
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: height / 2
+                            color: Theme.errorColor
+                            border.width: slideToDelete.dragging ? 3 : 1
+                            border.color: Theme.onErrorContainer
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            text: slideToDelete.confirmed ? "✓" : "›"
+                            font.pixelSize: 22
+                            font.bold: true
+                            color: Theme.onError
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: !slideToDelete.confirmed
+                            cursorShape: Qt.PointingHandCursor
+                            drag.target: deleteThumb
+                            drag.axis: Drag.XAxis
+                            drag.minimumX: slideToDelete.trackMargin
+                            drag.maximumX: slideToDelete.maxX
+
+                            onPressed: slideToDelete.dragging = true
+                            onReleased: {
+                                slideToDelete.dragging = false;
+                                if (deleteThumb.x >= slideToDelete.maxX * 0.9) {
+                                    deleteThumb.x = slideToDelete.maxX;
+                                    slideToDelete.confirmed = true;
+                                    Sfx.playBack();
+                                    ApiClient.del("/hospitals/" + root.hospital.id, "deleteHospital:" + root.hospital.id);
+                                } else {
+                                    deleteThumb.x = slideToDelete.trackMargin;
+                                }
                             }
                         }
                     }
