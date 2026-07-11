@@ -2,6 +2,7 @@
 #include <QNetworkAccessManager>
 #include <QQuickAsyncImageProvider>
 #include <QQuickImageResponse>
+#include <QThreadStorage>
 
 class AuthImageResponse : public QQuickImageResponse {
   Q_OBJECT
@@ -11,6 +12,7 @@ public:
 
 private:
   QImage m_image;
+  QNetworkReply *m_reply = nullptr;
 };
 
 class AuthImageProvider : public QQuickAsyncImageProvider {

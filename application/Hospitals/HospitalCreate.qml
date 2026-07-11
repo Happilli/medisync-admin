@@ -68,6 +68,7 @@ FocusScope {
     }
 
     Rectangle {
+        radius: 20
         anchors.fill: parent
         color: Theme.surfaceContainer
     }
@@ -244,7 +245,7 @@ FocusScope {
 
                     Text {
                         anchors.centerIn: parent
-                        text: root.busy ? "Creating…" : "Create Hospital"
+                        text: root.busy ? "Creating..." : "Create Hospital"
                         font.pixelSize: 18
                         font.bold: true
                         color: (root.busy || !root.formValid) ? Theme.onSurfaceVariant : Theme.onPrimary

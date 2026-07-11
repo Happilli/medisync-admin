@@ -13,16 +13,26 @@ Item {
 
     readonly property bool hasCitizenshipPhoto: !!(root.patientData && root.patientData.citizenship_photo_url)
 
-    onPatientIdChanged: root.fetchPatient()
+    onPatientIdChanged: {
+        root.patientData = null;
+        root.loadError = "";
+        root.loading = root.patientId >= 0;
+        fetchDebounce.restart();
+    }
+
+    Timer {
+        id: fetchDebounce
+        interval: 150
+        onTriggered: root.fetchPatient()
+    }
 
     function fetchPatient() {
         if (root.patientId < 0) {
-            root.patientData = null;
+            root.loading = false;
             return;
         }
         root.loading = true;
         root.loadError = "";
-        root.patientData = null;
         ApiClient.get("/patients/" + root.patientId, "patientDetail:" + root.patientId);
     }
 
@@ -56,7 +66,7 @@ Item {
     Text {
         visible: root.patientId >= 0 && root.loading
         anchors.centerIn: parent
-        text: "Loading…"
+        text: "Loading..."
         font.pixelSize: 14
         color: Theme.onSurfaceVariant
     }
@@ -213,7 +223,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         visible: citizenshipImage.status === Image.Loading
-                        text: "Loading…"
+                        text: "Loading..."
                         font.pixelSize: 13
                         color: Theme.onSurfaceVariant
                     }
@@ -232,7 +242,6 @@ Item {
                         acceptedButtons: Qt.NoButton
                         cursorShape: Qt.CrossCursor
                     }
-
                     Rectangle {
                         id: lens
                         width: 170
@@ -242,13 +251,18 @@ Item {
                         color: Theme.surfaceContainerHighest
                         visible: zoomArea.containsMouse && citizenshipImage.status === Image.Ready
 
+                        readonly property real zoomFactor: 2.5
+                        readonly property real sampleSize: lens.width / lens.zoomFactor
+
                         readonly property real localX: zoomArea.mouseX - citizenshipImage.x
                         readonly property real localY: zoomArea.mouseY - citizenshipImage.y
                         readonly property real offsetX: (citizenshipImage.width - citizenshipImage.paintedWidth) / 2
                         readonly property real offsetY: (citizenshipImage.height - citizenshipImage.paintedHeight) / 2
                         readonly property real fx: citizenshipImage.paintedWidth > 0 ? Math.min(Math.max((lens.localX - lens.offsetX) / citizenshipImage.paintedWidth, 0), 1) : 0
                         readonly property real fy: citizenshipImage.paintedHeight > 0 ? Math.min(Math.max((lens.localY - lens.offsetY) / citizenshipImage.paintedHeight, 0), 1) : 0
-                        readonly property real zoomFactor: 2.5
+
+                        readonly property real sourceX: lens.offsetX + lens.fx * citizenshipImage.paintedWidth - lens.sampleSize / 2
+                        readonly property real sourceY: lens.offsetY + lens.fy * citizenshipImage.paintedHeight - lens.sampleSize / 2
 
                         x: Math.min(Math.max(zoomArea.mouseX - width / 2, 0), photoFrame.width - width)
                         y: Math.min(Math.max(zoomArea.mouseY - height / 2, 0), photoFrame.height - height)
@@ -262,13 +276,14 @@ Item {
                                 maskSource: lensMask
                             }
 
-                            Image {
+                            ShaderEffectSource {
                                 id: zoomedImage
-                                source: citizenshipImage.source
-                                width: citizenshipImage.paintedWidth * lens.zoomFactor
-                                height: citizenshipImage.paintedHeight * lens.zoomFactor
-                                x: lens.width / 2 - lens.fx * width
-                                y: lens.height / 2 - lens.fy * height
+                                sourceItem: citizenshipImage
+                                live: true
+                                hideSource: false
+                                sourceRect: Qt.rect(lens.sourceX, lens.sourceY, lens.sampleSize, lens.sampleSize)
+                                textureSize: Qt.size(lens.width * 2, lens.height * 2)
+                                anchors.fill: parent
                                 smooth: true
                             }
                         }
@@ -483,7 +498,7 @@ Item {
                     }
                     Text {
                         anchors.centerIn: parent
-                        text: slideToDelete.confirmed ? "Deleting…" : "Slide to permanently delete patient"
+                        text: slideToDelete.confirmed ? "Deleting..." : "Slide to permanently delete patient"
                         font.pixelSize: 14
                         font.bold: true
                         color: Theme.errorColor

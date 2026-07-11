@@ -74,6 +74,7 @@ FocusScope {
 
         Rectangle {
             id: listPane
+            radius: 20
             width: root.focusRequested ? 260 : parent.width
             height: parent.height
             color: Theme.surfaceContainerLow
@@ -85,7 +86,7 @@ FocusScope {
 
                 Text {
                     visible: root.loadingList
-                    text: "Syncing…"
+                    text: "Syncing..."
                     font.pixelSize: 12
                     color: Theme.onSurfaceVariant
                 }

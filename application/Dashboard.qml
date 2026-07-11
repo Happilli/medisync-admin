@@ -13,6 +13,7 @@ Item {
     property int selectedIndex: -1
     property int openIndex: -1
     property bool sectionContentExpanded: false
+    property bool notificationsOpen: false
 
     readonly property var menuItems: [
         {
@@ -20,36 +21,23 @@ Item {
             label: "Patients",
             description: "Verify and manage patient accounts",
             icon: "assets/icons/patient.svg",
-            accent: Theme.secondaryColor,
-            background: "assets/backgrounds/patients.png"
+            accent: Theme.secondaryColor
         },
         {
             key: "hospitals",
             label: "Hospitals",
             description: "Register and Manage hospitals and its doctors",
             icon: "assets/icons/hospital.svg",
-            accent: Theme.tertiaryColor,
-            background: "assets/backgrounds/hospitals.png"
-        },
-        {
-            key: "notifications",
-            label: "Notifications",
-            description: "View all the notifications..",
-            icon: "assets/icons/notification.svg",
-            accent: Theme.primaryColor,
-            background: "assets/backgrounds/hospitals.png"
+            accent: Theme.tertiaryColor
         },
         {
             key: "logout",
             label: "Logout",
             description: "Sign out of this admin session",
             icon: "assets/icons/exit.svg",
-            accent: Theme.errorColor,
-            background: "assets/backgrounds/patients.png"
+            accent: Theme.errorColor
         }
     ]
-
-    readonly property var currentItem: root.selectedIndex >= 0 ? root.menuItems[root.selectedIndex] : root.menuItems[0]
 
     function openSelected() {
         if (root.selectedIndex < 0)
@@ -77,55 +65,38 @@ Item {
     }
 
     focus: true
-    Keys.onRightPressed: if (root.viewState === "menu") {
+    Keys.onRightPressed: if (root.viewState === "menu" && !root.notificationsOpen) {
         if (root.selectedIndex < 0)
             root.selectedIndex = 0;
         else if (root.selectedIndex < root.menuItems.length - 1)
             root.selectedIndex += 1;
         Sfx.playMove();
     }
-    Keys.onLeftPressed: if (root.viewState === "menu" && root.selectedIndex > 0) {
+    Keys.onLeftPressed: if (root.viewState === "menu" && root.selectedIndex > 0 && !root.notificationsOpen) {
         root.selectedIndex -= 1;
         Sfx.playMove();
     }
-    Keys.onDownPressed: if (root.viewState === "menu" && root.selectedIndex < 0) {
+    Keys.onDownPressed: if (root.viewState === "menu" && root.selectedIndex < 0 && !root.notificationsOpen) {
         root.selectedIndex = 0;
         Sfx.playMove();
     }
-    Keys.onReturnPressed: if (root.viewState === "menu") {
+    Keys.onReturnPressed: if (root.viewState === "menu" && !root.notificationsOpen) {
         Sfx.playEnter();
         root.openSelected();
     }
-    Keys.onEscapePressed: if (root.viewState === "open") {
-        Sfx.playMove();
-        root.closeToMenu();
+    Keys.onEscapePressed: {
+        if (root.notificationsOpen) {
+            Sfx.playMove();
+            root.notificationsOpen = false;
+        } else if (root.viewState === "open") {
+            Sfx.playMove();
+            root.closeToMenu();
+        }
     }
 
     Rectangle {
         anchors.fill: parent
         color: Theme.backgroundColor
-    }
-
-    Image {
-        id: backgroundImage
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        source: root.currentItem.background
-        visible: status === Image.Ready
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        color: "black"
-        opacity: root.viewState === "open" ? 0.55 : 0.35
-        visible: backgroundImage.status === Image.Ready
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 220
-            }
-        }
     }
 
     Item {
@@ -137,7 +108,10 @@ Item {
                 duration: 200
             }
         }
-
+        Stats {
+            id: statsSection
+            anchors.centerIn: parent
+        }
         Row {
             id: cardRow
             anchors.left: parent.left
@@ -256,9 +230,6 @@ Item {
                     return patientsComponent;
                 if (key === "hospitals")
                     return hospitalsComponent;
-                if (key === "notifications") {
-                    return notificationsComponent;
-                }
                 return null;
             }
             Behavior on anchors.margins {
@@ -294,9 +265,114 @@ Item {
             id: hospitalsComponent
             Hospital {}
         }
-        Component {
-            id: notificationsComponent
-            NotificationCenter {}
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        visible: root.notificationsOpen
+        z: 90
+        onClicked: root.notificationsOpen = false
+    }
+    Rectangle {
+        id: notificationPopout
+        visible: opacity > 0.01
+        opacity: root.notificationsOpen ? 1 : 0
+        z: 100
+        anchors.bottom: notifTrigger.top
+        anchors.right: parent.right
+        anchors.bottomMargin: 12
+        anchors.rightMargin: 28
+        width: 380
+        height: Math.min(560, notifPopoutContent.notificationsList.length === 0 ? 220 : 128 + Math.min(notifPopoutContent.notificationsList.length, 5) * 72 + (Math.min(notifPopoutContent.notificationsList.length, 5) - 1) * 8)
+
+        radius: 20
+        color: Theme.surfaceContainer
+        clip: true
+
+        transformOrigin: Item.Bottom
+        scale: root.notificationsOpen ? 1 : 0.85
+
+        Behavior on height {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on scale {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        NotificationCenter {
+            id: notifPopoutContent
+            anchors.fill: parent
+            anchors.margins: 18
+            onBackRequested: root.notificationsOpen = false
+        }
+    }
+    Rectangle {
+        id: notifTrigger
+        width: 52
+        height: 52
+        radius: 26
+        z: 95
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.margins: 28
+        color: root.notificationsOpen ? Theme.primaryColor : Theme.surfaceContainerHigh
+        border.width: 1
+        border.color: root.notificationsOpen ? Theme.primaryColor : Theme.outlineVariant
+        scale: notifTriggerArea.containsMouse ? 1.06 : 1.0
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 150
+            }
+        }
+        Behavior on scale {
+            NumberAnimation {
+                duration: 120
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Icon {
+            anchors.centerIn: parent
+            iconSize: 22
+            source: "assets/icons/notification.svg"
+            color: root.notificationsOpen ? Theme.onPrimary : Theme.onSurfaceVariant
+        }
+
+        Rectangle {
+            visible: notifPopoutContent.notificationsList.filter(n => !n.is_read).length > 0 && !root.notificationsOpen
+            width: 12
+            height: 12
+            radius: 6
+            color: Theme.errorColor
+            border.width: 2
+            border.color: Theme.backgroundColor
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: -1
+        }
+
+        MouseArea {
+            id: notifTriggerArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                Sfx.playChangePane();
+                root.notificationsOpen = !root.notificationsOpen;
+            }
         }
     }
 }

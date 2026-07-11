@@ -82,6 +82,7 @@ FocusScope {
             id: listPane
             width: root.focusRequested ? 260 : parent.width
             height: parent.height
+            radius: 20
             color: Theme.surfaceContainerLow
 
             Column {
@@ -91,7 +92,7 @@ FocusScope {
 
                 Text {
                     visible: root.loadingList
-                    text: "Syncing…"
+                    text: "Syncing..."
                     font.pixelSize: 12
                     color: Theme.onSurfaceVariant
                 }
@@ -119,7 +120,7 @@ FocusScope {
                     model: root.patientsList
                     currentIndex: root.patientsList.findIndex(p => p.id === root.selectedPatientId)
                     highlightMoveDuration: 120
-                    cacheBuffer: 400
+                    cacheBuffer: 150
 
                     onCurrentIndexChanged: patientListView.positionViewAtIndex(patientListView.currentIndex, ListView.Contain)
 
@@ -135,35 +136,46 @@ FocusScope {
                         width: patientListView.width
                         height: 56
                         radius: 12
-                        color: isSelected ? Theme.secondaryContainerColor : "transparent"
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 100
-                            }
-                        }
+                        color: "transparent"
 
                         Row {
                             anchors.fill: parent
                             anchors.margins: 8
                             spacing: 10
 
+                            Icon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconSize: 16
+                                source: "assets/icons/selectedarrow.svg"
+                                color: rowDelegate.accent
+                                opacity: rowDelegate.isSelected ? 1 : 0
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 140
+                                    }
+                                }
+                            }
+
                             Item {
                                 id: avatarSlot
                                 width: 40
                                 height: 40
                                 anchors.verticalCenter: parent.verticalCenter
-                                ShapeCanvas {
-                                    id: avatarShape
+                                Rectangle {
                                     anchors.fill: parent
+                                    radius: width / 2
                                     color: rowDelegate.accent
-                                    borderWidth: 2
-                                    borderColor: rowDelegate.isSelected ? Theme.primaryFixedColor : Theme.secondaryFixedColor
-                                    roundedPolygon: rowDelegate.isSelected ? GetMShapes.get(2) : GetMShapes.get(20)
-                                    imageSource: rowDelegate.photoUrl.length > 0 ? (Config.baseUrl + rowDelegate.photoUrl) : ""
-                                    animation: NumberAnimation {
-                                        duration: 150
-                                        easing.type: Easing.OutCubic
+                                    border.width: 2
+                                    border.color: rowDelegate.isSelected ? Theme.primaryFixedColor : Theme.secondaryFixedColor
+                                    clip: true
+
+                                    Image {
+                                        anchors.fill: parent
+                                        visible: rowDelegate.photoUrl.length > 0
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        source: rowDelegate.photoUrl.length > 0 ? (Config.baseUrl + rowDelegate.photoUrl) : ""
                                     }
                                 }
 
@@ -179,7 +191,7 @@ FocusScope {
 
                             Column {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: patientListView.width - 70
+                                width: patientListView.width - 96
                                 spacing: 2
 
                                 Text {

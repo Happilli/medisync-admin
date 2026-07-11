@@ -72,10 +72,7 @@ FocusScope {
             event.accepted = false;
         }
     }
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.backgroundColor
-    }
+
     Item {
         id: container
         anchors.fill: parent
@@ -178,6 +175,7 @@ FocusScope {
                 if (key == "manage") {
                     return hospitalManageComponent;
                 }
+                return contentLoader.sourceComponent;
             }
 
             Behavior on x {

@@ -195,7 +195,7 @@ Item {
 
                 Text {
                     visible: root.loadingDoctors
-                    text: "Syncing…"
+                    text: "Syncing..."
                     font.pixelSize: 12
                     color: Theme.onSurfaceVariant
                 }
@@ -357,7 +357,7 @@ Item {
                     }
                     Text {
                         anchors.centerIn: parent
-                        text: slideToDelete.confirmed ? "Deleting…" : "Slide to permanently delete hospital"
+                        text: slideToDelete.confirmed ? "Deleting..." : "Slide to permanently delete hospital"
                         font.pixelSize: 14
                         font.bold: true
                         color: Theme.errorColor

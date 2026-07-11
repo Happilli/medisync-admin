@@ -16,7 +16,7 @@ FocusScope {
 
     readonly property bool hasLicensePhoto: !!(root.doctorData && root.doctorData.license_photo_url)
 
-    focus: true
+    focus: root.visible
 
     onDoctorIdChanged: root.fetchDoctor()
     onVisibleChanged: if (root.visible) {
@@ -62,7 +62,7 @@ FocusScope {
     Text {
         visible: root.loading
         anchors.centerIn: parent
-        text: "Loading…"
+        text: "Loading..."
         font.pixelSize: 14
         color: Theme.onSurfaceVariant
     }
@@ -220,7 +220,7 @@ FocusScope {
                     Text {
                         anchors.centerIn: parent
                         visible: licenseImage.status === Image.Loading
-                        text: "Loading…"
+                        text: "Loading..."
                         font.pixelSize: 13
                         color: Theme.onSurfaceVariant
                     }
@@ -249,13 +249,18 @@ FocusScope {
                         color: Theme.surfaceContainerHighest
                         visible: zoomArea.containsMouse && licenseImage.status === Image.Ready
 
+                        readonly property real zoomFactor: 2.5
+                        readonly property real sampleSize: lens.width / lens.zoomFactor
+
                         readonly property real localX: zoomArea.mouseX - licenseImage.x
                         readonly property real localY: zoomArea.mouseY - licenseImage.y
                         readonly property real offsetX: (licenseImage.width - licenseImage.paintedWidth) / 2
                         readonly property real offsetY: (licenseImage.height - licenseImage.paintedHeight) / 2
                         readonly property real fx: licenseImage.paintedWidth > 0 ? Math.min(Math.max((lens.localX - lens.offsetX) / licenseImage.paintedWidth, 0), 1) : 0
                         readonly property real fy: licenseImage.paintedHeight > 0 ? Math.min(Math.max((lens.localY - lens.offsetY) / licenseImage.paintedHeight, 0), 1) : 0
-                        readonly property real zoomFactor: 2.5
+
+                        readonly property real sourceX: lens.offsetX + lens.fx * licenseImage.paintedWidth - lens.sampleSize / 2
+                        readonly property real sourceY: lens.offsetY + lens.fy * licenseImage.paintedHeight - lens.sampleSize / 2
 
                         x: Math.min(Math.max(zoomArea.mouseX - width / 2, 0), photoFrame.width - width)
                         y: Math.min(Math.max(zoomArea.mouseY - height / 2, 0), photoFrame.height - height)
@@ -269,13 +274,14 @@ FocusScope {
                                 maskSource: lensMask
                             }
 
-                            Image {
+                            ShaderEffectSource {
                                 id: zoomedImage
-                                source: licenseImage.source
-                                width: licenseImage.paintedWidth * lens.zoomFactor
-                                height: licenseImage.paintedHeight * lens.zoomFactor
-                                x: lens.width / 2 - lens.fx * width
-                                y: lens.height / 2 - lens.fy * height
+                                sourceItem: licenseImage
+                                live: true
+                                hideSource: false
+                                sourceRect: Qt.rect(lens.sourceX, lens.sourceY, lens.sampleSize, lens.sampleSize)
+                                textureSize: Qt.size(lens.width * 2, lens.height * 2)
+                                anchors.fill: parent
                                 smooth: true
                             }
                         }

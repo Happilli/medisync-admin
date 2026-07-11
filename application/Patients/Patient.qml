@@ -65,10 +65,6 @@ FocusScope {
             event.accepted = false;
         }
     }
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.backgroundColor
-    }
 
     Item {
         id: container

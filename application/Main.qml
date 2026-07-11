@@ -41,20 +41,30 @@ Window {
         }
     }
 
-    Connections {
-        target: Config
-        function onConfigChanged() {
-            ApiClient.baseUrl = Config.baseUrl;
-            NotificationClient.baseUrl = Config.baseUrl;
-        }
+    Binding {
+        target: ApiClient
+        property: "baseUrl"
+        value: Config.baseUrl
+    }
+    Binding {
+        target: ApiClient
+        property: "session"
+        value: SessionManager
+    }
+    Binding {
+        target: NotificationClient
+        property: "baseUrl"
+        value: Config.baseUrl
+    }
+    Binding {
+        target: NotificationClient
+        property: "session"
+        value: SessionManager
     }
 
     Component.onCompleted: {
-        ApiClient.baseUrl = Config.baseUrl;
-        ApiClient.session = SessionManager;
-        NotificationClient.baseUrl = Config.baseUrl;
-        NotificationClient.session = SessionManager;
-        if (SessionManager.isLoggedIn())
+        if (SessionManager.isLoggedIn()) {
             NotificationClient.connectNow();
+        }
     }
 }
