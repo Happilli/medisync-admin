@@ -7,7 +7,6 @@ import "./Hospitals"
 Item {
     id: root
     signal loggedOut
-    Component.onCompleted: root.forceActiveFocus()
 
     property string viewState: "menu"
     property int selectedIndex: -1
@@ -39,6 +38,12 @@ Item {
         }
     ]
 
+    readonly property int unreadCount: notifPopoutContent.notificationsList.filter(n => !n.is_read).length
+    readonly property bool keysBlocked: root.notificationsOpen
+
+    focus: true
+    Component.onCompleted: root.forceActiveFocus()
+
     function openSelected() {
         if (root.selectedIndex < 0)
             return;
@@ -64,23 +69,35 @@ Item {
         root.loggedOut();
     }
 
-    focus: true
-    Keys.onRightPressed: if (root.viewState === "menu" && !root.notificationsOpen) {
-        if (root.selectedIndex < 0)
+    Keys.onRightPressed: {
+        if (root.viewState !== "menu" || root.keysBlocked) {
+            return;
+        }
+        if (root.selectedIndex < 0) {
             root.selectedIndex = 0;
-        else if (root.selectedIndex < root.menuItems.length - 1)
+        } else if (root.selectedIndex < root.menuItems.length - 1) {
             root.selectedIndex += 1;
+        }
         Sfx.playMove();
     }
-    Keys.onLeftPressed: if (root.viewState === "menu" && root.selectedIndex > 0 && !root.notificationsOpen) {
+    Keys.onLeftPressed: {
+        if (root.viewState !== "menu" || root.selectedIndex <= 0 || root.keysBlocked) {
+            return;
+        }
         root.selectedIndex -= 1;
         Sfx.playMove();
     }
-    Keys.onDownPressed: if (root.viewState === "menu" && root.selectedIndex < 0 && !root.notificationsOpen) {
+    Keys.onDownPressed: {
+        if (root.viewState !== "menu" || root.selectedIndex >= 0 || root.keysBlocked) {
+            return;
+        }
         root.selectedIndex = 0;
         Sfx.playMove();
     }
-    Keys.onReturnPressed: if (root.viewState === "menu" && !root.notificationsOpen) {
+    Keys.onReturnPressed: {
+        if (root.viewState !== "menu" || root.keysBlocked) {
+            return;
+        }
         Sfx.playEnter();
         root.openSelected();
     }
@@ -100,18 +117,22 @@ Item {
     }
 
     Item {
+        id: menuView
         anchors.fill: parent
         visible: root.viewState === "menu"
         opacity: root.viewState === "menu" ? 1 : 0
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 200
             }
         }
+
         Stats {
             id: statsSection
             anchors.centerIn: parent
         }
+
         Row {
             id: cardRow
             anchors.left: parent.left
@@ -202,9 +223,11 @@ Item {
     }
 
     Item {
+        id: sectionView
         anchors.fill: parent
         visible: root.viewState === "open"
         opacity: root.viewState === "open" ? 1 : 0
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 200
@@ -226,12 +249,15 @@ Item {
                     return null;
                 }
                 const key = root.menuItems[root.openIndex].key;
-                if (key === "patients")
+                if (key === "patients") {
                     return patientsComponent;
-                if (key === "hospitals")
+                }
+                if (key === "hospitals") {
                     return hospitalsComponent;
+                }
                 return null;
             }
+
             Behavior on anchors.margins {
                 NumberAnimation {
                     duration: 260
@@ -273,6 +299,7 @@ Item {
         z: 90
         onClicked: root.notificationsOpen = false
     }
+
     Rectangle {
         id: notificationPopout
         visible: opacity > 0.01
@@ -284,11 +311,9 @@ Item {
         anchors.rightMargin: 28
         width: 380
         height: Math.min(560, notifPopoutContent.notificationsList.length === 0 ? 220 : 128 + Math.min(notifPopoutContent.notificationsList.length, 5) * 72 + (Math.min(notifPopoutContent.notificationsList.length, 5) - 1) * 8)
-
         radius: 20
         color: Theme.surfaceContainer
         clip: true
-
         transformOrigin: Item.Bottom
         scale: root.notificationsOpen ? 1 : 0.85
 
@@ -318,6 +343,7 @@ Item {
             onBackRequested: root.notificationsOpen = false
         }
     }
+
     Rectangle {
         id: notifTrigger
         width: 52
@@ -352,7 +378,7 @@ Item {
         }
 
         Rectangle {
-            visible: notifPopoutContent.notificationsList.filter(n => !n.is_read).length > 0 && !root.notificationsOpen
+            visible: root.unreadCount > 0 && !root.notificationsOpen
             width: 12
             height: 12
             radius: 6
