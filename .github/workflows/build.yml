@@ -39,7 +39,7 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-application-linux
+          name: medisync-admin 
           path: |
             build/
             !build/CMake*
@@ -50,12 +50,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd build
-          zip -r ../compiled-application-linux.zip . -x "CMake*" "CMakeFiles*" "*.o"
+          zip -r ../medisync-admin.zip . -x "CMake*" "CMakeFiles*" "*.o"
 
       - name: Publish to GitHub Releases
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: compiled-application-linux.zip
+          files: medisync-admin.zip
           fail_on_unmatched_files: true
           generate_release_notes: true
