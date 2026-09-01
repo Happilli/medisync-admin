@@ -10,6 +10,8 @@ Item {
     property var patientData: null
     property bool loading: false
     property string loadError: ""
+    property bool rejecting: false
+    property bool showRejectPanel: false
 
     readonly property bool hasCitizenshipPhoto: !!(root.patientData && root.patientData.citizenship_photo_url)
 
@@ -17,6 +19,8 @@ Item {
         root.patientData = null;
         root.loadError = "";
         root.loading = root.patientId >= 0;
+        root.showRejectPanel = false;
+        root.rejecting = false;
         fetchDebounce.restart();
     }
 
@@ -47,6 +51,10 @@ Item {
                     root.loadError = message;
                 }
             } else if (requestId === "verifyPatient:" + root.patientId) {
+                if (success)
+                    root.fetchPatient();
+            } else if (requestId === "rejectPatient:" + root.patientId) {
+                root.rejecting = false;
                 if (success)
                     root.fetchPatient();
             } else if (requestId === "deletePatient:" + root.patientId && success) {
@@ -311,6 +319,15 @@ Item {
                     color: Theme.onSurface
                 }
 
+                Text {
+                    visible: root.patientData && !!root.patientData.rejection_reason
+                    width: Math.min(420, parent.width)
+                    text: "Previously rejected: " + (root.patientData ? (root.patientData.rejection_reason ?? "") : "")
+                    font.pixelSize: 12
+                    color: Theme.errorColor
+                    wrapMode: Text.WordWrap
+                }
+
                 Item {
                     id: slideToVerify
                     width: Math.min(420, parent.width)
@@ -424,6 +441,114 @@ Item {
                                     ApiClient.post("/patients/" + root.patientId + "/verify", "verifyPatient:" + root.patientId);
                                 } else {
                                     thumb.x = slideToVerify.trackMargin;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Column {
+                    width: Math.min(420, parent.width)
+                    spacing: 10
+
+                    Rectangle {
+                        visible: !root.showRejectPanel
+                        width: parent.width
+                        height: 44
+                        radius: 10
+                        color: Theme.errorContainerColor
+                        border.width: 1
+                        border.color: Theme.errorColor
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Reject verification"
+                            font.pixelSize: 13
+                            font.bold: true
+                            color: Theme.onErrorContainer
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Sfx.playBack();
+                                root.showRejectPanel = true;
+                                rejectReasonField.text = "";
+                            }
+                        }
+                    }
+
+                    Column {
+                        visible: root.showRejectPanel
+                        width: parent.width
+                        spacing: 8
+
+                        FormField {
+                            id: rejectReasonField
+                            width: parent.width
+                            label: "Reason (optional, shown to patient)"
+                            fieldHeight: 44
+                            labelFontSize: 12
+                            inputFontSize: 14
+                        }
+
+                        Row {
+                            width: parent.width
+                            spacing: 10
+
+                            Rectangle {
+                                width: (parent.width - 10) / 2
+                                height: 40
+                                radius: 10
+                                color: Theme.surfaceContainerHighest
+                                border.width: 1
+                                border.color: Theme.outlineVariant
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Cancel"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: Theme.onSurfaceVariant
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        Sfx.playBack();
+                                        root.showRejectPanel = false;
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: (parent.width - 10) / 2
+                                height: 40
+                                radius: 10
+                                color: root.rejecting ? Theme.surfaceContainerHigh : Theme.errorColor
+                                opacity: root.rejecting ? 0.7 : 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.rejecting ? "Rejecting..." : "Confirm reject"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    color: root.rejecting ? Theme.onSurfaceVariant : Theme.onError
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: !root.rejecting
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        Sfx.playEnter();
+                                        root.rejecting = true;
+                                        root.showRejectPanel = false;
+                                        const trimmed = rejectReasonField.text.trim();
+                                        const body = trimmed.length > 0 ? {
+                                            reason: trimmed
+                                        } : {};
+                                        ApiClient.post("/patients/" + root.patientId + "/reject", "rejectPatient:" + root.patientId, body);
+                                    }
                                 }
                             }
                         }
